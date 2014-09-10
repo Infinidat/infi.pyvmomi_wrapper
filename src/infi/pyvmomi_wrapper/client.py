@@ -1,9 +1,6 @@
 from pyVmomi import vim
-from .connect import Connect, Disconnect
-
-
-class TimeoutException(Exception):
-    pass
+from .connect import Connect
+from .errors import TimeoutException
 
 
 def get_reference_to_managed_object(mo):
@@ -27,19 +24,16 @@ class Client(object):
 
     def login_extension_by_certificate(self, extension_key, locale=None):
         if not locale:
-            if hasattr(self.session_manager, 'defaultLocale'):
-                locale = self.session_manager.defaultLocale
-            else:
-                locale = 'en_US'
+            locale = getattr(self.session_manager, 'defaultLocale', 'en_US')
         self.session_manager.LoginExtensionByCertificate(extension_key, locale)
         self.property_collectors = {}
 
     def logout(self):
-        Disconnect(self.service_instance)
+        self.session_manager.Logout()
         self.property_collectors = {}
 
     def wait_for_tasks(self, tasks, timeout=None):
-        # TODO refactor to use self._retrieve_properties OR CachedPropertyCollector
+        # TODO refactor to use CachedPropertyCollector
         # current implementation copied (and extended) from pyvmomi-community-samples
         from time import time
         property_collector = self.service_content.propertyCollector
@@ -68,6 +62,8 @@ class Client(object):
                 for filter_set in update.filterSet:
                     for obj_set in filter_set.objectSet:
                         task = obj_set.obj
+                        if str(task) not in task_list:
+                            continue
                         for change in obj_set.changeSet:
                             if change.name == 'info':
                                 state = change.val.state
@@ -75,13 +71,10 @@ class Client(object):
                                 state = change.val
                             else:
                                 continue
-
-                            if not str(task) in task_list:
-                                continue
-
                             if state == vim.TaskInfo.State.success:
                                 # Remove task from taskList
                                 task_list.remove(str(task))
+                                break
                             elif state == vim.TaskInfo.State.error:
                                 raise task.info.error
                 # Move to next version

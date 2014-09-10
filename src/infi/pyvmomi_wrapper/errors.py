@@ -6,3 +6,6 @@ class ExtensionAlreadyRegisteredException(Exception):
 
 class CreateTaskException(Exception):
     pass
+
+class TimeoutException(Exception):
+    pass

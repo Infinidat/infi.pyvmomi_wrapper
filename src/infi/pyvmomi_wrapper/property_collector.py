@@ -105,7 +105,7 @@ class CachedPropertyCollector(object):
     def _merge_object_update_into_cache__leave(self, object_ref_key, objectUpdate=None):
         # the object no longer exists, we drop it from the result dictionary
         logger.debug("Removing object_ref_key {} from cache".format(object_ref_key))
-        _ = self._result.pop(object_ref_key, None)
+        self._result.pop(object_ref_key, None)
 
     def _walk_on_property_path(self, path):
         from re import findall
@@ -208,7 +208,7 @@ class CachedPropertyCollector(object):
         for filterSet in update.filterSet:
             for key in map(lambda missing_object: self._client.get_reference_to_managed_object(missing_object.obj), filterSet.missingSet):
                 logger.debug("Removing key {} from cache because it is missing in the filterSet".format(key))
-                _ = self._result.pop(key, None)
+                self._result.pop(key, None)
             for objectUpdate in filterSet.objectSet:
                 self._merge_object_update_into_cache(objectUpdate)
         if update.truncated:
