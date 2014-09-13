@@ -34,8 +34,7 @@ SSLTunnelConnection.__call__ = my_ssl_tunnel_call_patch
 
 def _create_stub(host, protocol="https", port=443,
                  namespace=None, path="/sdk",
-                 preferredApiVersions=None, keyfile=None, certfile=None,
-                 sslTunnel=False):
+                 preferredApiVersions=None, keyfile=None, certfile=None):
     if preferredApiVersions is None:
         preferredApiVersions = GetServiceVersions('vim25')
 

@@ -4,7 +4,7 @@ from .errors import TimeoutException
 
 
 def get_reference_to_managed_object(mo):
-    motype = mo.__class__.__name__.split(".")[-1]       # stip ".vim" prefix
+    motype = mo.__class__.__name__.split(".")[-1]       # stip "vim." prefix
     return "{}:{}".format(motype, mo._moId)
 
 
