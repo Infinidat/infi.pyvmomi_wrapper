@@ -34,22 +34,9 @@ SSLTunnelConnection.__call__ = my_ssl_tunnel_call_patch
 
 def _create_stub(host, protocol="https", port=443,
                  namespace=None, path="/sdk",
-                 preferredApiVersions=None, keyfile=None, certfile=None):
-    if preferredApiVersions is None:
-        preferredApiVersions = GetServiceVersions('vim25')
+                 version=None, keyfile=None, certfile=None):
 
-    supportedVersion = __FindSupportedVersion(protocol,
-                                              host,
-                                              port,
-                                              path,
-                                              preferredApiVersions)
-    if supportedVersion is None:
-        raise Exception("%s:%s is not a VIM server" % (host, port))
-
-    portNumber = protocol == "http" and -int(port) or int(port)
-
-    version = supportedVersion
-    port = portNumber
+    port = protocol == "http" and -int(port) or int(port)
 
     try:
         info = re.match(_rx, host)
@@ -113,7 +100,19 @@ def Connect(host, protocol="https", port=443, user=None, pwd=None,
     @type  certfile: string
     """
 
-    stub = _create_stub(host, protocol, port, namespace, path, preferredApiVersions, keyfile, certfile)
+    if preferredApiVersions is None:
+        preferredApiVersions = GetServiceVersions('vim25')
+
+    supportedVersion = __FindSupportedVersion(protocol,
+                                              host,
+                                              port,
+                                              path,
+                                              preferredApiVersions)
+    if supportedVersion is None:
+        raise Exception("%s:%s is not a VIM server" % (host, port))
+    version = supportedVersion
+
+    stub = _create_stub(host, protocol, port, namespace, path, version, keyfile, certfile)
 
     # Get Service instance
     si = vim.ServiceInstance("ServiceInstance", stub)

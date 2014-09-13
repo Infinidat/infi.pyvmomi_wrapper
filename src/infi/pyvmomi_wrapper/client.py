@@ -16,6 +16,7 @@ class Client(object):
         self.service_content = self.service_instance.content
         self.session_manager = self.service_instance.content.sessionManager
         self.root = self.service_content.rootFolder
+        self.host = vcenter_address
         self.property_collectors = {}
 
     def login(self, user, pwd):
