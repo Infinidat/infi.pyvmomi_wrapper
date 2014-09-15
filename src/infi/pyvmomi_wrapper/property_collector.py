@@ -1,7 +1,13 @@
 from pyVmomi import vim
+from infi.pyutils.decorators import wraps
 from infi.pyutils.lazy import cached_method
 from logging import getLogger
 from munch import Munch
+
+try:
+    from gevent.lock import Semaphore as Lock
+except ImportError:
+    from threading import Lock
 
 logger = getLogger(__name__)
 
@@ -11,6 +17,18 @@ INITIAL_VERSION = ''
 # foo.arProp["key val"]
 # foo.arProp["key val"].baz
 PROPERTY_NAME_PATTERN = r'\w+|\["[^"\]]+"\]'
+
+
+def locking_decorator(wrapped):
+    @wraps(wrapped)
+    def wrapper(self, *args, **kwargs):
+        self._lock.acquire()
+        try:
+            return wrapped(self, *args, **kwargs)
+        finally:
+            self._lock.release()
+    return wrapper
+
 
 class CachedPropertyCollector(object):
     """
@@ -27,6 +45,7 @@ class CachedPropertyCollector(object):
         self._properties_list = properties_list
         self._version = INITIAL_VERSION
         self._result = {}
+        self._lock = Lock()
 
     def __repr__(self):
         args = (self.__class__.__name__, getattr(self, '_managed_object_type', None),
@@ -223,6 +242,7 @@ class CachedPropertyCollector(object):
         """:returns: True if the cached data is not up to date"""
         return self.wait_for_updates(0)
 
+    @locking_decorator
     def get_properties(self):
         """This method checks first if there are changes in the server.
         If there are, the changes are merged into the cache and then returned from the cache.
@@ -239,6 +259,7 @@ class CachedPropertyCollector(object):
         :rtype: a dictionary with MoRefs as keys, and propertyName=propertyValue dictionary as values"""
         return self._result
 
+    @locking_decorator
     def wait_for_updates(self, time_in_seconds):
         """This method is blocking a maximum time of time_in_seconds, depending if there are changes on the server.
         This method does not update the cache with the changes, if there are any.
