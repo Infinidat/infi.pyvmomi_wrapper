@@ -1,26 +1,37 @@
-from pyVmomi import vmodl
-from pyVmomi.SoapAdapter import Serialize, Deserialize
-
-ReflectManagedMethodExecuterSoapArgument = vmodl.reflect.ManagedMethodExecuter.SoapArgument
-SOAP_VERSION = "urn:vim25/5.0"      # vim.version.version7
+from pyVmomi.VmomiSupport import CreateAndLoadManagedType
+from pyVmomi.ManagedMethodExecutorHelper import MMESoapStubAdapter
+from pyVmomi.VmomiSupport import F_OPTIONAL
+from ..errors import CLITypeException
 
 class EsxCLI(object):
+    _loaded_types = {}
+
     def __init__(self, host):
         self._host = host
 
-    def _generate_arguments(self, **kwargs):
-        sorted_keys = sorted(kwargs.keys())
-        sorted_kwargs = [(key, kwargs[key]) for key in sorted_keys]
-        return [ReflectManagedMethodExecuterSoapArgument(name=key, val=Serialize(value))
-                for key, value in sorted_kwargs if value is not None]
+    def _load_type(self, type_info):
+        if type_info.name not in self._loaded_types:
+            methods = []
+            for method in type_info.method:
+                params = [(param.name, param.type, param.version, F_OPTIONAL, method.privId) for param in method.paramTypeInfo]
+                return_type = (0, method.returnTypeInfo.type, method.returnTypeInfo.type)
+                methods.append((method.name, method.wsdlName, method.version, params, return_type, method.privId, list(method.fault)))
 
-    def execute(self, moid, method, **kwargs):
-        moe = self._host.RetrieveManagedMethodExecuter()
-        response = moe.ExecuteSoap(moid=moid, version=SOAP_VERSION, method=method,
-                                   argument=self._generate_arguments(**kwargs))
-        if response is None:
-            return
+            cls = CreateAndLoadManagedType(type_info.name, type_info.wsdlName, type_info.base[0], type_info.version, [], methods)
+            self._loaded_types[type_info.name] = cls
+        return self._loaded_types[type_info.name]
 
-        if response.response is None and response.fault.faultMsg is not None:
-            raise response.fault
-        return Deserialize(response.response)
+    def get(self, name):
+        type_name = "vim.EsxCLI." + name
+        mme = self._host.RetrieveManagedMethodExecuter()
+        stub = MMESoapStubAdapter(mme)
+        dm = self._host.RetrieveDynamicTypeManager()
+        type_to_moId = {moi.moType: moi.id for moi in dm.DynamicTypeMgrQueryMoInstances()}
+        if type_name in type_to_moId:
+            moId = type_to_moId[type_name]
+            ti = dm.DynamicTypeMgrQueryTypeInfo()
+            for type_info in ti.managedTypeInfo:
+                if type_info.name == type_name:
+                    cls = self._load_type(type_info)
+                    return cls(moId, stub)
+        raise CLITypeException("CLI type '{}' not found".format(name))

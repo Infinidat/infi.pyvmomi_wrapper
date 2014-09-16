@@ -1,11 +1,17 @@
-class ExtensionNotRegisteredException(Exception):
+class PyvmomiWrapperException(Exception):
     pass
 
-class ExtensionAlreadyRegisteredException(Exception):
+class ExtensionNotRegisteredException(PyvmomiWrapperException):
     pass
 
-class CreateTaskException(Exception):
+class ExtensionAlreadyRegisteredException(PyvmomiWrapperException):
     pass
 
-class TimeoutException(Exception):
+class CreateTaskException(PyvmomiWrapperException):
+    pass
+
+class TimeoutException(PyvmomiWrapperException):
+    pass
+
+class CLITypeException(PyvmomiWrapperException):
     pass
