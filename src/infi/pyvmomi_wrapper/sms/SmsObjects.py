@@ -1,9 +1,12 @@
-from pyVmomi.VmomiSupport import CreateDataType,  CreateManagedType,  CreateEnumType,  AddVersion,  AddVersionParent,  F_LINK,  F_LINKABLE,  F_OPTIONAL
-
 import pyVmomi
 pyVmomi.sms = pyVmomi.VmomiSupport.LazyModule('sms')
 if hasattr(pyVmomi.VmomiSupport, "_urnMap"):
     pyVmomi.VmomiSupport._urnMap["sms"] = "urn:sms"
+
+# The following definitions were taken from the VMware package
+# DO NOT EDIT
+
+from pyVmomi.VmomiSupport import CreateDataType,  CreateManagedType,  CreateEnumType,  AddVersion,  AddVersionParent,  F_LINK,  F_LINKABLE,  F_OPTIONAL
 
 AddVersion('sms.version.version1', 'sms', '1.0', 0, 'sms')
 AddVersion('sms.version.version2', 'sms', '2.0', 0, 'sms')
