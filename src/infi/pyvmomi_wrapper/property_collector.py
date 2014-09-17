@@ -3,6 +3,7 @@ from infi.pyutils.decorators import wraps
 from infi.pyutils.lazy import cached_method
 from logging import getLogger
 from munch import Munch
+from copy import deepcopy
 
 try:
     from gevent.lock import Semaphore as Lock
@@ -80,7 +81,7 @@ class CachedPropertyCollector(object):
     @cached_method
     def _get_property_collector(self):
         property_collector = self._client.service_content.propertyCollector.CreatePropertyCollector()
-        property_collector.CreateFilter(self._get_property_filter_spec(), partialUpdates=True)
+        self._property_filter = property_collector.CreateFilter(self._get_property_filter_spec(), partialUpdates=True)
         return property_collector
 
     @cached_method
@@ -251,6 +252,7 @@ class CachedPropertyCollector(object):
 
         update = self._get_changes()
         if update is not None:
+            self._result = deepcopy(self._result)
             self._merge_changes_into_cache(update)
         return self.get_properties_from_cache()
 
