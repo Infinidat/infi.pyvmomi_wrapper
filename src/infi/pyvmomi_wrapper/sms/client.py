@@ -9,7 +9,7 @@ class SmsClient(object):
         import re
         session_cookie = re.search('vmware_soap_session="(.*?)"', client.service_instance._stub.cookie).group(1)
         additional_headers = {'vcSessionCookie': session_cookie}
-        stub = SoapStubAdapter(client.host, path="/sms/sdk", version="sms.version.version4", requestContext=additional_headers)
+        stub = SoapStubAdapter(client.host, path="/sms/sdk", version="sms.version.version2", requestContext=additional_headers)
         self.service_instance = sms.ServiceInstance("ServiceInstance", stub)
 
     def wait_for_task(self, task, timeout=None):
