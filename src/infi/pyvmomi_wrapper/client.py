@@ -14,7 +14,7 @@ class Client(object):
             user=username, pwd=password,
             certfile=certfile, keyfile=keyfile)
         self.service_content = self.service_instance.content
-        self.session_manager = self.service_instance.content.sessionManager
+        self.session_manager = self.service_content.sessionManager
         self.root = self.service_content.rootFolder
         self.host = vcenter_address
         self.property_collectors = {}
@@ -118,6 +118,10 @@ class Client(object):
         HToVm = vim.TraversalSpec(name="HToVm", type=vim.HostSystem, path="vm",
            selectSet=[vim.SelectionSpec(name="visitFolders")])
 
+        # Recurse through all Datacenter Datastores
+        dcToDs = vim.TraversalSpec(name="dcToDs", type=vim.Datacenter, path="datastore",
+           selectSet=[vim.SelectionSpec(name="visitFolders")])
+
         # Recurse through the folders
         visitFolders = vim.TraversalSpec(name="visitFolders", type=vim.Folder, path="childEntity",
            selectSet=[vim.SelectionSpec(name="visitFolders"),
@@ -126,10 +130,11 @@ class Client(object):
                       vim.SelectionSpec(name="crToH"),
                       vim.SelectionSpec(name="crToRp"),
                       vim.SelectionSpec(name="HToVm"),
+                      vim.SelectionSpec(name="dcToDs"),
                       vim.SelectionSpec(name="rpToVm"),
                      ])
 
-        return [visitFolders, dcToVmf, dcToHf, crToH, crToRp, rpToRp, HToVm, rpToVm]
+        return [visitFolders, dcToVmf, dcToHf, crToH, crToRp, rpToRp, HToVm, rpToVm, dcToDs]
 
     def _retrieve_properties(self, managed_object_type, props=[], collector=None, root=None, recurse=True):
         if not collector:
@@ -212,17 +217,10 @@ class Client(object):
         return self.get_decendents_by_name(vim.ClusterComputeResource, name=name)
 
     def get_datastores(self):
-        datastores = list()
-        for datacenter in self.get_datacenters():
-            datastores.extend(datacenter.datastore)
-        return datastores
+        return self.get_decendents_by_name(vim.Datastore)
 
     def get_datastore(self, name):
-        for datacenter in self.get_datacenters():
-            for datastore in datacenter.datastore:
-                if datastore.name == name:
-                    return datastore
-        return None
+        return self.get_decendents_by_name(vim.Datastore, name=name)
 
     def get_reference_to_managed_object(self, mo):
         return get_reference_to_managed_object(mo)
