@@ -37,6 +37,8 @@ class Client(object):
         # TODO refactor to use CachedPropertyCollector
         # current implementation copied (and extended) from pyvmomi-community-samples
         from time import time
+        if len(tasks) == 0:
+            return
         property_collector = self.service_content.propertyCollector
         task_list = [str(task) for task in tasks]
         # Create filter
