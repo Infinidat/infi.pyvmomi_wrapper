@@ -72,7 +72,7 @@ class CachedPropertyCollector(object):
 
     @cached_method
     def _get_object_set(self):
-        return vim.ObjectSpec(obj=self._get_container_view(), selectSet=self._get_select_set())
+        return [vim.ObjectSpec(obj=self._get_container_view(), selectSet=self._get_select_set())]
 
     @cached_method
     def _get_prop_set(self):
@@ -87,7 +87,7 @@ class CachedPropertyCollector(object):
     @cached_method
     def _get_property_filter_spec(self):
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.FilterSpec.html
-        return vim.PropertyFilterSpec(propSet=self._get_prop_set(), objectSet=[self._get_object_set()])
+        return vim.PropertyFilterSpec(propSet=self._get_prop_set(), objectSet=self._get_object_set())
 
     @cached_method
     def _get_select_set(self):
@@ -305,3 +305,22 @@ class VirtualMachinePropertyCollector(CachedPropertyCollector):
         select_set.append(self._create_traversal_spec(vim.ContainerView, 'container',
                           [select.name for select in select_set]))
         return select_set
+
+class TaskPropertyCollector(CachedPropertyCollector):
+    def __init__(self, client, tasks, properties=["info.state"]):
+        super(TaskPropertyCollector, self).__init__(client, vim.Task, properties)
+        self.tasks = tasks
+
+    def _get_object_set(self):
+        return [vim.ObjectSpec(obj=task) for task in self.tasks]
+
+    def iter_task_states_changes(self, timeout_in_seconds=None):
+        update = self._get_changes(time_in_seconds=timeout_in_seconds)
+        if update is None:
+            return
+        for filter_set in update.filterSet:
+            for obj_set in filter_set.objectSet:
+                task = obj_set.obj
+                for change in obj_set.changeSet:
+                    if change.name == 'info.state':    # we don't look for any other changes so this should be true
+                        yield task, change.val
