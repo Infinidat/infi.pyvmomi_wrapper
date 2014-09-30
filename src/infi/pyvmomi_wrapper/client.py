@@ -43,13 +43,11 @@ class Client(object):
         task_list = [str(task) for task in tasks]
         # Create filter
         obj_specs = [vim.ObjectSpec(obj=task) for task in tasks]
-        property_spec = vim.PropertySpec(type=vim.Task, pathSet=[], all=True)
-        filter_spec = vim.PropertyFilterSpec()
-        filter_spec.objectSet = obj_specs
-        filter_spec.propSet = [property_spec]
-        pcfilter = property_collector.CreateFilter(filter_spec, True)
+        property_spec = vim.PropertySpec(type=vim.Task, pathSet=["info"])
+        filter_spec = vim.PropertyFilterSpec(propSet=[property_spec], objectSet=obj_specs)
         start_time = time()
         wait_options = vim.WaitOptions()
+        pcfilter = property_collector.CreateFilter(filter_spec, True)
         try:
             version, state = None, None
             # Loop looking for updates till the state moves to a completed state.
