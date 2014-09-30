@@ -42,11 +42,17 @@ class CachedPropertyCollector(object):
     def __init__(self, client, managed_object_type, properties_list):
         super(CachedPropertyCollector, self).__init__()
         self._client = client
+        self._property_collector = None
         self._managed_object_type = managed_object_type
         self._properties_list = properties_list
         self._version = INITIAL_VERSION
         self._result = {}
         self._lock = Lock()
+
+    def __del__(self):
+        if self._property_collector is not None:
+            self._property_collector.Destroy()
+            self._property_collector = None
 
     def __repr__(self):
         args = (self.__class__.__name__, getattr(self, '_managed_object_type', None),
@@ -80,9 +86,9 @@ class CachedPropertyCollector(object):
 
     @cached_method
     def _get_property_collector(self):
-        property_collector = self._client.service_content.propertyCollector.CreatePropertyCollector()
-        self._property_filter = property_collector.CreateFilter(self._get_property_filter_spec(), partialUpdates=True)
-        return property_collector
+        self._property_collector = self._client.service_content.propertyCollector.CreatePropertyCollector()
+        self._property_filter = self._property_collector.CreateFilter(self._get_property_filter_spec(), partialUpdates=True)
+        return self._property_collector
 
     @cached_method
     def _get_property_filter_spec(self):
