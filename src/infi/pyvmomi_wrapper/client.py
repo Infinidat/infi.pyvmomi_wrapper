@@ -34,55 +34,24 @@ class Client(object):
         self.property_collectors = {}
 
     def wait_for_tasks(self, tasks, timeout=None):
-        # TODO refactor to use CachedPropertyCollector
-        # current implementation copied (and extended) from pyvmomi-community-samples
         from time import time
-        property_collector = self.service_content.propertyCollector
-        task_list = [str(task) for task in tasks]
-        # Create filter
-        obj_specs = [vim.ObjectSpec(obj=task) for task in tasks]
-        property_spec = vim.PropertySpec(type=vim.Task, pathSet=[], all=True)
-        filter_spec = vim.PropertyFilterSpec()
-        filter_spec.objectSet = obj_specs
-        filter_spec.propSet = [property_spec]
-        pcfilter = property_collector.CreateFilter(filter_spec, True)
+        from .property_collector import TaskPropertyCollector
+        if len(tasks) == 0:
+            return
+        property_collector = TaskPropertyCollector(self, tasks)
         start_time = time()
-        wait_options = vim.WaitOptions()
-        try:
-            version, state = None, None
-            # Loop looking for updates till the state moves to a completed state.
-            while len(task_list):
-                if timeout is not None:
-                    remaining_timeout = timeout - (time() - start_time)
-                    if remaining_timeout <= 0:
-                        raise TimeoutException("Time out while waiting for tasks")
-                    wait_options.maxWaitSeconds = int(remaining_timeout)
-                update = property_collector.WaitForUpdatesEx(version, wait_options)
-                if update is None:
-                    continue
-                for filter_set in update.filterSet:
-                    for obj_set in filter_set.objectSet:
-                        task = obj_set.obj
-                        if str(task) not in task_list:
-                            continue
-                        for change in obj_set.changeSet:
-                            if change.name == 'info':
-                                state = change.val.state
-                            elif change.name == 'info.state':
-                                state = change.val
-                            else:
-                                continue
-                            if state == vim.TaskInfo.State.success:
-                                # Remove task from taskList
-                                task_list.remove(str(task))
-                                break
-                            elif state == vim.TaskInfo.State.error:
-                                raise task.info.error
-                # Move to next version
-                version = update.version
-        finally:
-            if pcfilter:
-                pcfilter.Destroy()
+        remaining_timeout = None
+        while len(tasks) > 0:
+            if timeout is not None:
+                remaining_timeout = int(timeout - (time() - start_time))
+                if remaining_timeout <= 0:
+                    raise TimeoutException("Time out while waiting for tasks")
+            update = property_collector.iter_task_states_changes(timeout_in_seconds=remaining_timeout)
+            for task, state in update:
+                if state == vim.TaskInfo.State.success and task in tasks:
+                    tasks.remove(task)
+                elif state == vim.TaskInfo.State.error:
+                    raise task.info.error
 
     def wait_for_task(self, task, timeout=None):
         return self.wait_for_tasks([task], timeout)
