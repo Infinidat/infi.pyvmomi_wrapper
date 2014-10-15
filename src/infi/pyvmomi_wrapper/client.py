@@ -119,9 +119,7 @@ class Client(object):
         options = vim.RetrieveOptions()
         objects = []
         retrieve_result = collector.RetrievePropertiesEx(specSet=[spec], options=options)
-        if retrieve_result is None:
-            return []
-        while retrieve_result.token:
+        while retrieve_result is not None and retrieve_result.token:
             objects.extend(retrieve_result.objects)
             retrieve_result = collector.ContinueRetrievePropertiesEx(retrieve_result.token)
         objects.extend(retrieve_result.objects)
