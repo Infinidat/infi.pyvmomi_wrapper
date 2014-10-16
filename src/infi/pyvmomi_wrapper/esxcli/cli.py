@@ -8,6 +8,7 @@ class EsxCLI(object):
 
     def __init__(self, host):
         self._host = host
+        self._host_api_version = host.summary.config.product.apiVersion
 
     def _load_type(self, type_info):
         if type_info.name not in self._loaded_types:
@@ -25,6 +26,7 @@ class EsxCLI(object):
         type_name = "vim.EsxCLI." + name
         mme = self._host.RetrieveManagedMethodExecuter()
         stub = MMESoapStubAdapter(mme)
+        stub.versionId = 'urn:vim25/{}'.format(self._host_api_version)
         dm = self._host.RetrieveDynamicTypeManager()
         type_to_moId = {moi.moType: moi.id for moi in dm.DynamicTypeMgrQueryMoInstances()}
         if type_name in type_to_moId:
