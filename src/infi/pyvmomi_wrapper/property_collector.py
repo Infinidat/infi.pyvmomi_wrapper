@@ -51,7 +51,11 @@ class CachedPropertyCollector(object):
 
     def __del__(self):
         if self._property_collector is not None:
-            self._property_collector.Destroy()
+            try:
+                self._property_collector.Destroy()
+            except vim.ManagedObjectNotFound:
+                # in case session ended, property collector may already be destroyed
+                pass
             self._property_collector = None
 
     def __repr__(self):
