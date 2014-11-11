@@ -38,6 +38,8 @@ class Client(object):
         from .property_collector import TaskPropertyCollector
         if len(tasks) == 0:
             return
+        # create a copy of 'tasks', because we're going to use 'remove' and we don't want to change the user's list
+        tasks = tasks[:]
         property_collector = TaskPropertyCollector(self, tasks)
         start_time = time()
         remaining_timeout = None
