@@ -313,10 +313,12 @@ class VirtualMachinePropertyCollector(CachedPropertyCollector):
         select_set.append(self._create_traversal_spec(vim.Datacenter, 'vmFolder',
                                                     ["Folder.childEntity"]))
         select_set.append(self._create_traversal_spec(vim.Folder, 'childEntity',
-                                                    ['Datacenter.vmFolder', "Folder.childEntity"]))
+                                                    ['Datacenter.vmFolder', "Folder.childEntity",
+                                                     'VirtualApp.vm']))
         select_set.append(self._create_traversal_spec(vim.ContainerView, 'container',
                           [select.name for select in select_set]))
         return select_set
+
 
 class TaskPropertyCollector(CachedPropertyCollector):
     def __init__(self, client, tasks, properties=["info.state"]):
