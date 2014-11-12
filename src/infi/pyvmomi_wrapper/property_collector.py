@@ -279,6 +279,7 @@ class CachedPropertyCollector(object):
         update = self._get_changes(time_in_seconds)
         return update is not None
 
+
 class HostSystemCachedPropertyCollector(CachedPropertyCollector):
     """
     Facade for fetching host attributes by using a faster traversal (e.g no need to traverse inside HostSystem)
@@ -295,7 +296,8 @@ class HostSystemCachedPropertyCollector(CachedPropertyCollector):
         select_set.append(self._create_traversal_spec(vim.Datacenter, 'hostFolder',
                           ['Folder.childEntity']))
         select_set.append(self._create_traversal_spec(vim.Folder, 'childEntity',
-                          ['Datacenter.hostFolder', 'ClusterComputeResource.host', 'ComputeResource.host']))
+                          ['Datacenter.hostFolder', 'ClusterComputeResource.host', 'ComputeResource.host',
+                           'Folder.childEntity']))
         select_set.append(self._create_traversal_spec(vim.ContainerView, 'container',
                           [select.name for select in select_set]))
         return select_set
