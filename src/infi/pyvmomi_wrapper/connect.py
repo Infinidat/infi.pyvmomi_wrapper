@@ -6,9 +6,26 @@ from pyVmomi import vim
 import re
 import sys
 from six import reraise
-
+from logging import getLogger
 
 ## Uber patch of doom - fixes issue #163 in pyvmomi
+logger = getLogger(__name__)
+
+
+class SoapStubAdapterWithLogging(SoapStubAdapter):
+    def _debug(self, messsage, *args, **kwargs):
+        try:
+            logger.debug(messsage.format(*args, **kwargs))
+        except:
+            pass
+
+    def InvokeMethod(self, mo, info, args, outerStub=None):
+        self._debug("{} --> {}", mo, info.wsdlName)
+        try:
+            return SoapStubAdapter.InvokeMethod(self, mo, info, args, outerStub)
+        finally:
+            self._debug("{} <-- {}", mo, info.wsdlName)
+
 
 def my_ssl_tunnel_call_patch(self, path, key_file=None, cert_file=None, **kwargs):
     from six.moves import http_client
@@ -58,10 +75,10 @@ def _create_stub(host, protocol="https", port=443,
     # Create the SOAP stub adapter
     if certfile is not None and keyfile is not None:
         # SSL Tunnel
-        return SoapStubAdapter('sdkTunnel', 8089, version=version, path=path,
+        return SoapStubAdapterWithLogging('sdkTunnel', 8089, version=version, path=path,
                                certKeyFile=keyfile, certFile=certfile, httpProxyHost=host)
     else:
-        return SoapStubAdapter(host, port, version=version, path=path)
+        return SoapStubAdapterWithLogging(host, port, version=version, path=path)
 
 def Connect(host, protocol="https", port=443, user=None, pwd=None,
             namespace=None, path="/sdk",
