@@ -180,14 +180,12 @@ class CachedPropertyCollector(object):
     def _merge_property_change__add(self, property_dict, key, value):
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.Change.html
         list_to_update = self._get_list_and_object_to_update(property_dict, key, value)
-        logger.debug("Appending {}".format(value.__class__))
         list_to_update.insert(-1, value)
 
     def _merge_property_change__assign(self, property_dict, key, value):
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.Change.html
         object_to_update = self._get_list_and_object_to_update(property_dict, key, value, key.endswith(']'))
         name = self._get_property_name_to_update(property_dict, key)
-        logger.debug("Assigning {} to {}".format(value.__class__, name))
         assignment_method = getattr(object_to_update, "__setitem__", object_to_update.__setattr__)
         assignment_method(name, value)
 
@@ -196,10 +194,7 @@ class CachedPropertyCollector(object):
         list_to_update = self._get_list_and_object_to_update(property_dict, key, value)
         key_to_remove = self._get_key_to_remove(key)
         value_list = [item for item in list_to_update if item.key == key_to_remove]
-        if not value_list:
-            msg = "No item with key {!r} in list {!r}, original value is {!r}, original key is {!r}"
-            logger.warn(msg.format(key_to_remove, list_to_update, value, key))
-        else:
+        if value_list:
             value = value_list[0]
             list_to_update.remove(value)
 
@@ -217,7 +212,7 @@ class CachedPropertyCollector(object):
             logger.debug("Modifying property {}, operation {}".format(propertyChange.name, propertyChange.op))
             updatemethods[propertyChange.op](properties, propertyChange.name, propertyChange.val)
         for missingSet in objectUpdate.missingSet:
-            logger.debug("Removing from cache a property that has gone missing{}".format(missingSet.path))
+            logger.debug("Removing from cache a property that has gone missing {}".format(missingSet.path))
             self._merge_property_change__remove(properties, missingSet.path, None)
 
     def _merge_object_update_into_cache(self, objectUpdate):
@@ -232,9 +227,6 @@ class CachedPropertyCollector(object):
     def _merge_changes_into_cache(self, update):
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.UpdateSet.html
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.FilterUpdate.html
-        logger.debug("Merging changes into cache; the following log messages contain the current cache and the incoming update")
-        logger.debug(repr(self._result))
-        logger.debug(repr(update))
         for filterSet in update.filterSet:
             for key in map(lambda missing_object: self._client.get_reference_to_managed_object(missing_object.obj), filterSet.missingSet):
                 logger.debug("Removing key {} from cache because it is missing in the filterSet".format(key))
@@ -246,8 +238,6 @@ class CachedPropertyCollector(object):
         else:
             self._version = update.version
             logger.debug("Cache of {!r} is updated for version {}".format(self, self._version))
-            logger.debug("Updated cached after merge follows")
-            logger.debug(repr(self._result))
 
     def check_for_updates(self):
         """:returns: True if the cached data is not up to date"""
