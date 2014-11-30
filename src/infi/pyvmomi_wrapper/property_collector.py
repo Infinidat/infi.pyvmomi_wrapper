@@ -152,6 +152,8 @@ class CachedPropertyCollector(object):
         for key in property_dict.keys():
             if path.startswith(key):
                 break
+        else:
+            raise Exception("HIPVM-665 property collector is trying to modify an empty dict")
         # key is a prefix of path
         if path == key:
             return property_dict
@@ -239,6 +241,12 @@ class CachedPropertyCollector(object):
             self._version = update.version
             logger.debug("Cache of {!r} is updated for version {}".format(self, self._version))
 
+    def _reset_and_update(self):
+        self._version = INITIAL_VERSION
+        self._result = {}
+        update = self._get_changes()
+        self._merge_changes_into_cache(update)
+
     def check_for_updates(self):
         """:returns: True if the cached data is not up to date"""
         return self.wait_for_updates(0)
@@ -253,7 +261,11 @@ class CachedPropertyCollector(object):
         update = self._get_changes()
         if update is not None:
             self._result = deepcopy(self._result)
-            self._merge_changes_into_cache(update)
+            try:
+                self._merge_changes_into_cache(update)
+            except:
+                logger.exception("Caught unexpected exception during property collector update merge. Resetting.")
+                self._reset_and_update()
         return self.get_properties_from_cache()
 
     def get_properties_from_cache(self):
