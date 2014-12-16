@@ -71,6 +71,15 @@ class ExtensionFacade(object):
                 for task in self._get_extensions_data_objects()[0].taskList
                 if ids.get(task.taskID)}
 
+    def _workaround_vcenter_restart(self, extension):
+        # HIPVM-670 VMWare resets some unset fields to empty strings upon restart, and then fails on UpdateExtension
+        # due to "incorrect parameters". So we need to re-unset empty fields
+        extension.extendedProductInfo.companyUrl = extension.extendedProductInfo.companyUrl or None
+        extension.extendedProductInfo.productUrl = extension.extendedProductInfo.productUrl or None
+        extension.extendedProductInfo.managementUrl = extension.extendedProductInfo.managementUrl or None
+        extension.solutionManagerInfo.smallIconUrl = extension.solutionManagerInfo.smallIconUrl or None
+        return extension
+
     def _add_task(self, task_id, task_name):
         extension = self._get_extensions_data_objects()[0]
         tasks = self._get_tasks()
@@ -79,6 +88,7 @@ class ExtensionFacade(object):
         task_resources = [("{}.label".format(key), value) for key, value in tasks.items()]
         # TODO events
         extension.resourceList = [self._new_task_extension_resource_info('en', 'task', task_resources)]
+        extension = self._workaround_vcenter_restart(extension)
         self._managed_object.UpdateExtension(extension)
         clear_cache(self)
 
