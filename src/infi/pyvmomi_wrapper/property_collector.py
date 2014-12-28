@@ -283,13 +283,12 @@ class HostSystemCachedPropertyCollector(CachedPropertyCollector):
 
     @cached_method
     def _get_select_set(self):
-        ccrToH = self._create_traversal_spec("ccrToH", vim.ClusterComputeResource, "host")
         crToH = self._create_traversal_spec("crToH", vim.ComputeResource, "host")
         dcToHf = self._create_traversal_spec("dcToHf", vim.Datacenter, "hostFolder", ["visitFolders"])
         visitFolders = self._create_traversal_spec("visitFolders", vim.Folder, "childEntity",
-            ["visitFolders", "dcToHf", "ccrToH", "crToH"])
+            ["visitFolders", "dcToHf", "crToH"])
         container = self._create_traversal_spec("container", vim.ContainerView, "container", ["visitFolders"])
-        return [container, visitFolders, dcToHf, crToH, ccrToH]
+        return [container, visitFolders, dcToHf, crToH]
 
 
 class VirtualMachinePropertyCollector(CachedPropertyCollector):
