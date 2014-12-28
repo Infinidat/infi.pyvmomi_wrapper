@@ -63,17 +63,8 @@ class CachedPropertyCollector(object):
                 getattr(self, '_properties_list', []), getattr(self, '_version', repr('')))
         return "<{}: object_type={!r}, properties={!r}, version={}>".format(*args)
 
-    def _guess_traversal_spec_name(self, managed_object_type, property_name):
-        """:returns: A guessable name of a TraversalSpec being used in this facade"""
-        managed_object_type_name = managed_object_type.__name__.split(".")[-1]      # strip "vim." prefix
-        name = "{}.{}".format(managed_object_type_name, property_name)
-        return name
-
-    def _create_traversal_spec(self, managed_object_type, property_name, next_selector_names=[]):
-        """:returns: a TravelSpec object whose name is '{managed_object_type}.{property_name}'"""
-        return vim.TraversalSpec(name=self._guess_traversal_spec_name(managed_object_type, property_name),
-                                 type=managed_object_type, path=property_name,
-                                 selectSet=[vim.SelectionSpec(name=name) for name in next_selector_names])
+    def _create_traversal_spec(self, name, managed_object_type, property_name, next_selector_names=[]):
+        return self._client._create_traversal_spec(name, managed_object_type, property_name, next_selector_names)
 
     @cached_method
     def _get_container_view(self):
@@ -292,17 +283,13 @@ class HostSystemCachedPropertyCollector(CachedPropertyCollector):
 
     @cached_method
     def _get_select_set(self):
-        select_set = list()
-        select_set.append(self._create_traversal_spec(vim.ClusterComputeResource, 'host'))
-        select_set.append(self._create_traversal_spec(vim.ComputeResource, 'host'))
-        select_set.append(self._create_traversal_spec(vim.Datacenter, 'hostFolder',
-                          ['Folder.childEntity']))
-        select_set.append(self._create_traversal_spec(vim.Folder, 'childEntity',
-                          ['Datacenter.hostFolder', 'ClusterComputeResource.host', 'ComputeResource.host',
-                           'Folder.childEntity']))
-        select_set.append(self._create_traversal_spec(vim.ContainerView, 'container',
-                          [select.name for select in select_set]))
-        return select_set
+        ccrToH = self._create_traversal_spec("ccrToH", vim.ClusterComputeResource, "host")
+        crToH = self._create_traversal_spec("crToH", vim.ComputeResource, "host")
+        dcToHf = self._create_traversal_spec("dcToHf", vim.Datacenter, "hostFolder", ["visitFolders"])
+        visitFolders = self._create_traversal_spec("visitFolders", vim.Folder, "childEntity",
+            ["visitFolders", "dcToHf", "ccrToH", "crToH"])
+        container = self._create_traversal_spec("container", vim.ContainerView, "container", ["visitFolders"])
+        return [container, visitFolders, dcToHf, crToH, ccrToH]
 
 
 class VirtualMachinePropertyCollector(CachedPropertyCollector):
@@ -311,15 +298,14 @@ class VirtualMachinePropertyCollector(CachedPropertyCollector):
 
     @cached_method
     def _get_select_set(self):
-        select_set = list()
-        select_set.append(self._create_traversal_spec(vim.Datacenter, 'vmFolder',
-                                                    ["Folder.childEntity"]))
-        select_set.append(self._create_traversal_spec(vim.Folder, 'childEntity',
-                                                    ['Datacenter.vmFolder', "Folder.childEntity",
-                                                     'VirtualApp.vm']))
-        select_set.append(self._create_traversal_spec(vim.ContainerView, 'container',
-                          [select.name for select in select_set]))
-        return select_set
+        rpToRp = self._create_traversal_spec("rpToRp", vim.ResourcePool, "resourcePool", ["rpToRp", "rpToVm"])
+        rpToVm = self._create_traversal_spec("rpToVm", vim.ResourcePool, "vm")
+        crToRp = self._create_traversal_spec("crToRp", vim.ComputeResource, "resourcePool", ["rpToRp", "rpToVm"])
+        dcToHf = self._create_traversal_spec("dcToHf", vim.Datacenter, "hostFolder", ["visitFolders"])
+        visitFolders = self._create_traversal_spec("visitFolders", vim.Folder, "childEntity",
+            ["visitFolders", "dcToHf", "crToRp"])
+        container = self._create_traversal_spec("container", vim.ContainerView, "container", ["visitFolders"])
+        return [container, visitFolders, dcToHf, crToRp, rpToRp, rpToVm]
 
 
 class TaskPropertyCollector(CachedPropertyCollector):
