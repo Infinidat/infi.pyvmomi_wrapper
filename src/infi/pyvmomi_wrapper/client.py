@@ -58,53 +58,21 @@ class Client(object):
     def wait_for_task(self, task, timeout=None):
         return self.wait_for_tasks([task], timeout)
 
+    def _create_traversal_spec(self, name, managed_object_type, property_name, next_selector_names=[]):
+        return vim.TraversalSpec(name=name, type=managed_object_type, path=property_name,
+           selectSet=[vim.SelectionSpec(name=selector_name) for selector_name in next_selector_names])
+
     def _build_full_traversal(self):
-        from pyVmomi import vim
-
-        # Recurse through all ResourcePools
-        rpToRp = vim.TraversalSpec(name="rpToRp", type=vim.ResourcePool, path="resourcePool",
-            selectSet=[vim.SelectionSpec(name="rpToRp"),
-                       vim.SelectionSpec(name="rpToVm")])
-
-        # Recurse through all ResourcePools
-        rpToVm = vim.TraversalSpec(name="rpToVm", type=vim.ResourcePool, path="vm")
-
-        # Traversal through ResourcePool branch
-        crToRp = vim.TraversalSpec(name="crToRp", type=vim.ComputeResource, path="resourcePool",
-           selectSet=[vim.SelectionSpec(name="rpToRp"),
-                      vim.SelectionSpec(name="rpToVm")])
-
-        # Traversal through host branch
-        crToH = vim.TraversalSpec(name="crToH", type=vim.ComputeResource, path="host")
-
-        # Traversal through hostFolder branch
-        dcToHf = vim.TraversalSpec(name="dcToHf", type=vim.Datacenter, path="hostFolder",
-           selectSet=[vim.SelectionSpec(name="visitFolders")])
-
-        # Traversal through vmFolder branch
-        dcToVmf = vim.TraversalSpec(name="dcToVmf", type=vim.Datacenter, path="vmFolder",
-           selectSet=[vim.SelectionSpec(name="visitFolders")])
-
-        # Recurse through all Hosts
-        HToVm = vim.TraversalSpec(name="HToVm", type=vim.HostSystem, path="vm",
-           selectSet=[vim.SelectionSpec(name="visitFolders")])
-
-        # Recurse through all Datacenter Datastores
-        dcToDs = vim.TraversalSpec(name="dcToDs", type=vim.Datacenter, path="datastore",
-           selectSet=[vim.SelectionSpec(name="visitFolders")])
-
-        # Recurse through the folders
-        visitFolders = vim.TraversalSpec(name="visitFolders", type=vim.Folder, path="childEntity",
-           selectSet=[vim.SelectionSpec(name="visitFolders"),
-                      vim.SelectionSpec(name="dcToHf"),
-                      vim.SelectionSpec(name="dcToVmf"),
-                      vim.SelectionSpec(name="crToH"),
-                      vim.SelectionSpec(name="crToRp"),
-                      vim.SelectionSpec(name="HToVm"),
-                      vim.SelectionSpec(name="dcToDs"),
-                      vim.SelectionSpec(name="rpToVm"),
-                     ])
-
+        rpToRp = self._create_traversal_spec("rpToRp", vim.ResourcePool, "resourcePool", ["rpToRp", "rpToVm"])
+        rpToVm = self._create_traversal_spec("rpToVm", vim.ResourcePool, "vm")
+        crToRp = self._create_traversal_spec("crToRp", vim.ComputeResource, "resourcePool", ["rpToRp", "rpToVm"])
+        crToH = self._create_traversal_spec("crToH", vim.ComputeResource, "host")
+        dcToHf = self._create_traversal_spec("dcToHf", vim.Datacenter, "hostFolder", ["visitFolders"])
+        dcToVmf = self._create_traversal_spec("dcToVmf", vim.Datacenter, "vmFolder", ["visitFolders"])
+        HToVm = self._create_traversal_spec("HToVm", vim.HostSystem, "vm", ["visitFolders"])
+        dcToDs = self._create_traversal_spec("dcToDs", vim.Datacenter, "datastore", ["visitFolders"])
+        visitFolders = self._create_traversal_spec("visitFolders", vim.Folder, "childEntity",
+            ["visitFolders", "dcToHf", "dcToVmf", "crToH", "crToRp", "HToVm", "dcToDs"])
         return [visitFolders, dcToVmf, dcToHf, crToH, crToRp, rpToRp, HToVm, rpToVm, dcToDs]
 
     def _retrieve_properties(self, managed_object_type, props=[], collector=None, root=None, recurse=True):
