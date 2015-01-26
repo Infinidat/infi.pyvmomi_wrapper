@@ -121,12 +121,13 @@ class CachedPropertyCollector(object):
                                                    objectUpdate.changeSet)}
         message = "Replacing cache for object_ref_key {} with a dictionary of the following keys {}"
         logger.debug(message.format(object_ref_key, properties.keys()))
+        self._result = dict(self._result)  # copy
         self._result[object_ref_key] = properties
 
     def _merge_object_update_into_cache__leave(self, object_ref_key, objectUpdate=None):
         # the object no longer exists, we drop it from the result dictionary
         logger.debug("Removing object_ref_key {} from cache".format(object_ref_key))
-        self._result.pop(object_ref_key, None)
+        self._result = dict(item for item in self._result.iteritems() if item[0] != object_ref_key)
 
     def _walk_on_property_path(self, path):
         from re import findall
@@ -139,7 +140,7 @@ class CachedPropertyCollector(object):
                 match.type = "property"
         return matches
 
-    def _get_list_and_object_to_update(self, property_dict, path, value, last=False):
+    def _get_list_or_object_to_update(self, property_dict, path, value, last=False):
         for key in property_dict.keys():
             if path.startswith(key):
                 break
@@ -147,11 +148,13 @@ class CachedPropertyCollector(object):
             raise Exception("HIPVM-665 property collector is trying to modify an empty dict")
         # key is a prefix of path
         if path == key:
-            return property_dict
+            return dict(property_dict)
         object_to_update = property_dict[key]
         path = path.replace(key, '').lstrip('.')
         walks = self._walk_on_property_path(path)
+        parent_object = None
         for item in walks if last else walks[:-1]:
+            parent_object = object_to_update
             if item.type == "key":
                 object_to_update = [element for element in object_to_update if element.key == item.value][0]
             else:
@@ -159,6 +162,17 @@ class CachedPropertyCollector(object):
                     object_to_update = object_to_update.get(item.value)
                 else:
                     object_to_update = getattr(object_to_update, item.value)
+
+        if isinstance(object_to_update, list) and parent_object:
+            new_list = list(object_to_update)  # copy
+            if isinstance(parent_object, list):
+                parent_object[parent_object.index(object_to_update)] = new_list
+            elif isinstance(parent_object, dict):
+                parent_object[item.value] = new_list
+            else:
+                setattr(parent_object, item.value, new_list)
+            return new_list
+
         return object_to_update
 
     def _get_property_name_to_update(self, property_dict, path):
@@ -172,19 +186,19 @@ class CachedPropertyCollector(object):
 
     def _merge_property_change__add(self, property_dict, key, value):
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.Change.html
-        list_to_update = self._get_list_and_object_to_update(property_dict, key, value)
+        list_to_update = self._get_list_or_object_to_update(property_dict, key, value)
         list_to_update.insert(-1, value)
 
     def _merge_property_change__assign(self, property_dict, key, value):
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.Change.html
-        object_to_update = self._get_list_and_object_to_update(property_dict, key, value, key.endswith(']'))
+        object_to_update = self._get_list_or_object_to_update(property_dict, key, value, key.endswith(']'))
         name = self._get_property_name_to_update(property_dict, key)
         assignment_method = getattr(object_to_update, "__setitem__", object_to_update.__setattr__)
         assignment_method(name, value)
 
     def _merge_property_change__remove(self, property_dict, key, value):
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.Change.html
-        list_to_update = self._get_list_and_object_to_update(property_dict, key, value)
+        list_to_update = self._get_list_or_object_to_update(property_dict, key, value)
         key_to_remove = self._get_key_to_remove(key)
         value_list = [item for item in list_to_update if item.key == key_to_remove]
         if value_list:
@@ -217,13 +231,17 @@ class CachedPropertyCollector(object):
         logger.debug("Update kind {} on cache key {}".format(objectUpdate.kind, object_ref_key))
         updateMethods[objectUpdate.kind](object_ref_key, objectUpdate)
 
+    def _remove_missing_object_from_cache(self, missingObject):
+        key = self._client.get_reference_to_managed_object(missingObject.obj)
+        logger.debug("Removing key {} from cache because it is missing in the filterSet".format(key))
+        self._result = dict(item for item in self._result.iteritems() if item[0] != key)
+
     def _merge_changes_into_cache(self, update):
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.UpdateSet.html
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.FilterUpdate.html
         for filterSet in update.filterSet:
-            for key in map(lambda missing_object: self._client.get_reference_to_managed_object(missing_object.obj), filterSet.missingSet):
-                logger.debug("Removing key {} from cache because it is missing in the filterSet".format(key))
-                self._result.pop(key, None)
+            for missingObject in filterSet.missingSet:
+                self._remove_missing_object_from_cache(missingObject)
             for objectUpdate in filterSet.objectSet:
                 self._merge_object_update_into_cache(objectUpdate)
         if update.truncated:
@@ -251,7 +269,6 @@ class CachedPropertyCollector(object):
 
         update = self._get_changes()
         if update is not None:
-            self._result = deepcopy(self._result)
             try:
                 self._merge_changes_into_cache(update)
             except:
