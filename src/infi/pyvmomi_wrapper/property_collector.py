@@ -95,7 +95,7 @@ class CachedPropertyCollector(object):
         """This method returns a SelectSet that travels the entire heirarchy.
         If you want to go over heirarchy in a more efficient way, overload this method"""
         select_set = list(self._client._build_full_traversal())
-        select_set.append(self._create_traversal_spec(vim.ContainerView, 'container',
+        select_set.append(self._create_traversal_spec('container', vim.ContainerView, "container",
                           [select.name for select in select_set]))
         return select_set
 
