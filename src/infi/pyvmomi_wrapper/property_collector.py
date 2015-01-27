@@ -3,7 +3,7 @@ from infi.pyutils.decorators import wraps
 from infi.pyutils.lazy import cached_method
 from logging import getLogger
 from munch import Munch
-from copy import deepcopy
+from copy import deepcopy, copy
 
 try:
     from gevent.lock import Semaphore as Lock
@@ -163,17 +163,14 @@ class CachedPropertyCollector(object):
                 else:
                     object_to_update = getattr(object_to_update, item.value)
 
-        if isinstance(object_to_update, list) and parent_object:
-            new_list = list(object_to_update)  # copy
-            if isinstance(parent_object, list):
-                parent_object[parent_object.index(object_to_update)] = new_list
-            elif isinstance(parent_object, dict):
-                parent_object[item.value] = new_list
-            else:
-                setattr(parent_object, item.value, new_list)
-            return new_list
-
-        return object_to_update
+        new_object = copy(object_to_update)
+        if isinstance(parent_object, dict):
+            parent_object[item.value] = new_object
+        if isinstance(parent_object, list):
+            parent_object[parent_object.index(object_to_update)] = new_object
+        else:
+            setattr(parent_object, item.value, new_object)
+        return new_object
 
     def _get_property_name_to_update(self, property_dict, path):
         for key in property_dict.keys():
