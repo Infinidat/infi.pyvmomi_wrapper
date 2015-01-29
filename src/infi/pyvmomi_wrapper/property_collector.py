@@ -152,24 +152,26 @@ class CachedPropertyCollector(object):
         object_to_update = property_dict[key]
         path = path.replace(key, '').lstrip('.')
         walks = self._walk_on_property_path(path)
-        parent_object = None
+        parent_object = property_dict
+        key_to_update = key
         for item in walks if last else walks[:-1]:
+            key_to_update = item.value
             parent_object = object_to_update
             if item.type == "key":
-                object_to_update = [element for element in object_to_update if element.key == item.value][0]
+                object_to_update = [element for element in object_to_update if element.key == key_to_update][0]
             else:
                 if isinstance(object_to_update, (dict, Munch)):
-                    object_to_update = object_to_update.get(item.value)
+                    object_to_update = object_to_update.get(key_to_update)
                 else:
-                    object_to_update = getattr(object_to_update, item.value)
+                    object_to_update = getattr(object_to_update, key_to_update)
 
         new_object = copy(object_to_update)
         if isinstance(parent_object, dict):
-            parent_object[item.value] = new_object
+            parent_object[key_to_update] = new_object
         if isinstance(parent_object, list):
             parent_object[parent_object.index(object_to_update)] = new_object
         else:
-            setattr(parent_object, item.value, new_object)
+            setattr(parent_object, key_to_update, new_object)
         return new_object
 
     def _get_property_name_to_update(self, property_dict, path):
