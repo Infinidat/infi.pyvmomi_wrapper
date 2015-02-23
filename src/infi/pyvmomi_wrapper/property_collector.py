@@ -140,7 +140,7 @@ class CachedPropertyCollector(object):
                 match.type = "property"
         return matches
 
-    def _get_list_or_object_to_update(self, property_dict, path, value, last=False):
+    def _get_list_or_object_to_update(self, object_ref_key, property_dict, path, value, last=False):
         for key in property_dict.keys():
             if path.startswith(key):
                 break
@@ -148,7 +148,12 @@ class CachedPropertyCollector(object):
             raise Exception("HIPVM-665 property collector is trying to modify an empty dict")
         # key is a prefix of path
         if path == key:
-            return dict(property_dict)
+            # we want to return the top-level 'property_dict', but we need to clone it from and replace it in
+            # self._result, in order for the result to actually update (and without replacing the reference)
+            # for code that use it
+            new_dict = dict(self._result[object_ref_key])
+            self._result[object_ref_key] = new_dict
+            return new_dict
         object_to_update = property_dict[key]
         path = path.replace(key, '').lstrip('.')
         walks = self._walk_on_property_path(path)
@@ -168,7 +173,7 @@ class CachedPropertyCollector(object):
         new_object = copy(object_to_update)
         if isinstance(parent_object, dict):
             parent_object[key_to_update] = new_object
-        if isinstance(parent_object, list):
+        elif isinstance(parent_object, list):
             parent_object[parent_object.index(object_to_update)] = new_object
         else:
             setattr(parent_object, key_to_update, new_object)
@@ -183,21 +188,21 @@ class CachedPropertyCollector(object):
     def _get_key_to_remove(self, key):
         return self._walk_on_property_path(key)[-1].value
 
-    def _merge_property_change__add(self, property_dict, key, value):
+    def _merge_property_change__add(self, object_ref_key, property_dict, key, value):
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.Change.html
-        list_to_update = self._get_list_or_object_to_update(property_dict, key, value)
+        list_to_update = self._get_list_or_object_to_update(object_ref_key, property_dict, key, value)
         list_to_update.insert(-1, value)
 
-    def _merge_property_change__assign(self, property_dict, key, value):
+    def _merge_property_change__assign(self, object_ref_key, property_dict, key, value):
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.Change.html
-        object_to_update = self._get_list_or_object_to_update(property_dict, key, value, key.endswith(']'))
+        object_to_update = self._get_list_or_object_to_update(object_ref_key, property_dict, key, value, key.endswith(']'))
         name = self._get_property_name_to_update(property_dict, key)
         assignment_method = getattr(object_to_update, "__setitem__", object_to_update.__setattr__)
         assignment_method(name, value)
 
-    def _merge_property_change__remove(self, property_dict, key, value):
+    def _merge_property_change__remove(self, object_ref_key, property_dict, key, value):
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.Change.html
-        list_to_update = self._get_list_or_object_to_update(property_dict, key, value)
+        list_to_update = self._get_list_or_object_to_update(object_ref_key, property_dict, key, value)
         key_to_remove = self._get_key_to_remove(key)
         value_list = [item for item in list_to_update if item.key == key_to_remove]
         if value_list:
@@ -216,10 +221,10 @@ class CachedPropertyCollector(object):
                              indirectRemove=self._merge_property_change__remove)
         for propertyChange in objectUpdate.changeSet:
             logger.debug("Modifying property {}, operation {}".format(propertyChange.name, propertyChange.op))
-            updatemethods[propertyChange.op](properties, propertyChange.name, propertyChange.val)
+            updatemethods[propertyChange.op](object_ref_key, properties, propertyChange.name, propertyChange.val)
         for missingSet in objectUpdate.missingSet:
             logger.debug("Removing from cache a property that has gone missing {}".format(missingSet.path))
-            self._merge_property_change__remove(properties, missingSet.path, None)
+            self._merge_property_change__remove(object_ref_key, properties, missingSet.path, None)
 
     def _merge_object_update_into_cache(self, objectUpdate):
         # http://vijava.sourceforge.net/vSphereAPIDoc/ver5/ReferenceGuide/vmodl.query.PropertyCollector.ObjectUpdate.html
