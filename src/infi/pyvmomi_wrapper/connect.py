@@ -8,7 +8,6 @@ import sys
 from six import reraise
 from logging import getLogger
 
-## Uber patch of doom - fixes issue #163 in pyvmomi
 logger = getLogger(__name__)
 
 
