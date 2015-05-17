@@ -96,7 +96,7 @@ class Task(object):
         exception_has_been_raised = exc_info != (None, None, None)
         if exception_has_been_raised:
             self.set_state('error')
-            self.set_description(exc_info[1].message)
+            self.set_description(str(exc_info[1].message))
             logger.error("Exception has been raised inside the task context", exc_info=exc_info)
             raise exc_info[0], exc_info[1], exc_info[2]
         self.set_state('success')
