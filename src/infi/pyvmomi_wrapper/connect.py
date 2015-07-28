@@ -26,28 +26,6 @@ class SoapStubAdapterWithLogging(SoapStubAdapter):
             self._debug("{} <-- {}", mo, info.wsdlName)
 
 
-def my_ssl_tunnel_call_patch(self, path, key_file=None, cert_file=None, **kwargs):
-    from six.moves import http_client
-    from pyVmomi.SoapAdapter import _SocketWrapper
-    # Don't pass any keyword args that HTTPConnection won't understand.
-    for arg in kwargs.keys():
-        if arg not in ("port", "strict", "timeout", "source_address"):
-            del kwargs[arg]
-    tunnel = http_client.HTTPConnection(path, **kwargs)
-    tunnel.request('CONNECT', self.proxyPath)
-    resp = tunnel.getresponse()
-    if resp.status != 200:
-        raise http_client.HTTPException("{0} {1}".format(resp.status, resp.reason))
-    retval = http_client.HTTPSConnection(path)
-    retval.sock = _SocketWrapper(tunnel.sock,
-                                 keyfile=key_file, certfile=cert_file)
-    return retval
-
-from pyVmomi.SoapAdapter import SSLTunnelConnection
-SSLTunnelConnection.__call__ = my_ssl_tunnel_call_patch
-
-## End hack
-
 def _create_stub(host, protocol="https", port=443,
                  namespace=None, path="/sdk",
                  version=None, keyfile=None, certfile=None):
