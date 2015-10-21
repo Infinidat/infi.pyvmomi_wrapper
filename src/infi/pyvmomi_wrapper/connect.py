@@ -99,7 +99,8 @@ def Connect(host, protocol="https", port=443, user=None, pwd=None,
         preferredApiVersions = GetServiceVersions('vim25')
 
     if sslContext is None:
-        sslContext = ssl._create_unverified_context()
+        sslContext = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        sslContext.verify_mode = ssl.CERT_NONE
 
     supportedVersion = __FindSupportedVersion(protocol,
                                               host,
