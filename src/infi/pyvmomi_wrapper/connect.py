@@ -5,6 +5,7 @@ from pyVim.connect import versionMap, _rx
 from pyVmomi import vim
 import re
 import sys
+import ssl
 from six import reraise
 from logging import getLogger
 
@@ -96,6 +97,9 @@ def Connect(host, protocol="https", port=443, user=None, pwd=None,
 
     if preferredApiVersions is None:
         preferredApiVersions = GetServiceVersions('vim25')
+
+    if sslContext is None:
+        sslContext = ssl._create_unverified_context()
 
     supportedVersion = __FindSupportedVersion(protocol,
                                               host,
