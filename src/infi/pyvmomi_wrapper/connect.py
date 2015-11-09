@@ -5,6 +5,7 @@ from pyVim.connect import versionMap, _rx
 from pyVmomi import vim
 import re
 import sys
+import ssl
 from six import reraise
 from logging import getLogger
 
@@ -59,7 +60,7 @@ def _create_stub(host, protocol="https", port=443,
 
 def Connect(host, protocol="https", port=443, user=None, pwd=None,
             namespace=None, path="/sdk",
-            preferredApiVersions=None, keyfile=None, certfile=None):
+            preferredApiVersions=None, keyfile=None, certfile=None, sslContext=None):
     """
     Determine the most preferred API version supported by the specified server,
     then connect to the specified server using that API version, login and return
@@ -101,7 +102,8 @@ def Connect(host, protocol="https", port=443, user=None, pwd=None,
                                               host,
                                               port,
                                               path,
-                                              preferredApiVersions)
+                                              preferredApiVersions,
+                                              sslContext)
     if supportedVersion is None:
         raise Exception("%s:%s is not a VIM server" % (host, port))
     version = supportedVersion

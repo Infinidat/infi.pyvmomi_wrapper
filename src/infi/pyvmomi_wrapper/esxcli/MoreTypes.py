@@ -32,7 +32,7 @@ for patch in [
 
 ####
 
-# new names used by MMESoapStubAdapter. Turns out ReflectTypes.py is a bit outdated
+# new names used by MMESoapStubAdapter. The VMware package where ReflectTypes was taken from uses "Executer" in MMESoapStubAdapter but pyvmomi's class uses "Executor"
 CreateDataType("vmodl.Reflect.ManagedMethodExecutor.SoapArgument", "ReflectManagedMethodExecuterSoapArgument", "vmodl.DynamicData", "vmodl.reflect.version.version1", [("name", "string", "vmodl.reflect.version.version1", 0), ("val", "string", "vmodl.reflect.version.version1", 0)])
 CreateDataType("vmodl.Reflect.ManagedMethodExecutor.SoapFault", "ReflectManagedMethodExecuterSoapFault", "vmodl.DynamicData", "vmodl.reflect.version.version1", [("faultMsg", "string", "vmodl.reflect.version.version1", 0), ("faultDetail", "string", "vmodl.reflect.version.version1", F_OPTIONAL)])
 CreateDataType("vmodl.Reflect.ManagedMethodExecutor.SoapResult", "ReflectManagedMethodExecuterSoapResult", "vmodl.DynamicData", "vmodl.reflect.version.version1", [("response", "string", "vmodl.reflect.version.version1", F_OPTIONAL), ("fault", "vmodl.reflect.ManagedMethodExecuter.SoapFault", "vmodl.reflect.version.version1", F_OPTIONAL)])
