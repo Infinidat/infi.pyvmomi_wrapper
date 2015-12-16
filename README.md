@@ -43,9 +43,15 @@ Example
     # get power state of all Virtual Machines
     name_and_power_state = client.retrieve_properties(vim.VirtualMachine, ['name', 'runtime.powerState'])
 
-Checking out the code
-=====================
-Run the following commands:
+Installation
+============
+infi.pyvmomi_wrapper is available on PyPI. You can install it with pip or with easy_install:
+
+    easy_install infi.pyvmomi_wrapper
+
+Development
+===========
+To check out the code for development purposes, clone the git repository and run the following commands:
 
     easy_install -U infi.projector
     projector devenv build
