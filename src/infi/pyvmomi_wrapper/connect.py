@@ -29,7 +29,7 @@ class SoapStubAdapterWithLogging(SoapStubAdapter):
 
 def _create_stub(host, protocol="https", port=443,
                  namespace=None, path="/sdk",
-                 version=None, keyfile=None, certfile=None):
+                 version=None, keyfile=None, certfile=None, sslContext=None):
 
     port = protocol == "http" and -int(port) or int(port)
 
@@ -54,9 +54,9 @@ def _create_stub(host, protocol="https", port=443,
     if certfile is not None and keyfile is not None:
         # SSL Tunnel
         return SoapStubAdapterWithLogging('sdkTunnel', 8089, version=version, path=path,
-                               certKeyFile=keyfile, certFile=certfile, httpProxyHost=host)
+                               certKeyFile=keyfile, certFile=certfile, httpProxyHost=host, sslContext=sslContext)
     else:
-        return SoapStubAdapterWithLogging(host, port, version=version, path=path)
+        return SoapStubAdapterWithLogging(host, port, version=version, path=path, sslContext=sslContext)
 
 def Connect(host, protocol="https", port=443, user=None, pwd=None,
             namespace=None, path="/sdk",
@@ -108,7 +108,7 @@ def Connect(host, protocol="https", port=443, user=None, pwd=None,
         raise Exception("%s:%s is not a VIM server" % (host, port))
     version = supportedVersion
 
-    stub = _create_stub(host, protocol, port, namespace, path, version, keyfile, certfile)
+    stub = _create_stub(host, protocol, port, namespace, path, version, keyfile, certfile, sslContext)
 
     # Get Service instance
     si = vim.ServiceInstance("ServiceInstance", stub)
