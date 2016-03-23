@@ -346,3 +346,4 @@ class TaskPropertyCollector(CachedPropertyCollector):
                 for change in obj_set.changeSet:
                     if change.name == 'info.state':    # we don't look for any other changes so this should be true
                         yield task, change.val
+        self._version = update.version
