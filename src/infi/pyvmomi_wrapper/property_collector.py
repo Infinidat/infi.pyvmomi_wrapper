@@ -107,7 +107,7 @@ class CachedPropertyCollector(object):
         logger.debug("Checking for updates on property collector {!r}".format(self))
         try:
             update = property_collector.WaitForUpdatesEx(truncated_version or self._version, wait_options)
-            logger.debug("There is {} pending update".format('no' if update is None else 'indeed an'))
+            logger.debug("There is {} pending update".format('no' if update is None else 'indeed a'))
             return update
         except vim.InvalidCollectorVersion:
             logger.error("caught InvalidCollectorVersion fault, collector version is out of date or invalid")
