@@ -19,29 +19,31 @@ And more...
 
 Example
 -------
-    from infi.pyvmomi_wrapper import Client
-    from pyVmomi import vim
+```python
+from infi.pyvmomi_wrapper import Client
+from pyVmomi import vim
 
-    client = Client("vcenter", username="user", password="pass")
+client = Client("vcenter", username="user", password="pass")
 
-    vm = client.get_virtual_machine("test_vm")
+vm = client.get_virtual_machine("test_vm")
 
-    # take a snapshot
-    create_task = vm.CreateSnapshot_Task(name="test", memory=False, quiesce=True)
-    client.wait_for_task(create_task)
-    snapshot = create_task.info.result
+# take a snapshot
+create_task = vm.CreateSnapshot_Task(name="test", memory=False, quiesce=True)
+client.wait_for_task(create_task)
+snapshot = create_task.info.result
 
-    # remove the snapshot
-    remove_task = snapshot.RemoveSnapshot_Task(removeChildren=False)
-    client.wait_for_task(remove_task)
+# remove the snapshot
+remove_task = snapshot.RemoveSnapshot_Task(removeChildren=False)
+client.wait_for_task(remove_task)
 
-    # take a look at virtual disk file locations
-    for dev in vm.config.hardware.device:
-        if isinstance(dev, vim.VirtualDisk):
-            print dev.backing.fileName
+# take a look at virtual disk file locations
+for dev in vm.config.hardware.device:
+    if isinstance(dev, vim.VirtualDisk):
+        print dev.backing.fileName
 
-    # get power state of all Virtual Machines
-    name_and_power_state = client.retrieve_properties(vim.VirtualMachine, ['name', 'runtime.powerState'])
+# get power state of all Virtual Machines
+name_and_power_state = client.retrieve_properties(vim.VirtualMachine, ['name', 'runtime.powerState'])
+```
 
 Installation
 ============
