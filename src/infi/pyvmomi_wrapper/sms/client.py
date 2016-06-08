@@ -8,10 +8,12 @@ class SmsClient(object):
     def __init__(self, client, version="version4"):
         import re
         # https://github.com/vmware/pyvmomi/pull/165#issuecomment-213623822
-        session_cookie = client.service_instance._GetStub().cookie.split('"')[1]
+        client_stub = client.service_instance._GetStub()
+        session_cookie = client_stub.cookie.split('"')[1]
+        ssl_context = client_stub.schemeArgs.get('context')
         additional_headers = {'vcSessionCookie': session_cookie}
         stub = SoapStubAdapter(client.host, path="/sms/sdk", version="sms.version." + version,
-            requestContext=additional_headers)
+            sslContext=ssl_context, requestContext=additional_headers)
         self.service_instance = sms.ServiceInstance("ServiceInstance", stub)
 
     def wait_for_task(self, task, timeout=None):
