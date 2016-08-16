@@ -2,6 +2,7 @@
 
 from pyVim.connect import GetServiceVersions, __FindSupportedVersion, SoapStubAdapter
 from pyVim.connect import versionMap, _rx
+from .format_object import FormatObject
 from pyVmomi import vim
 import re
 import sys
@@ -20,7 +21,10 @@ class SoapStubAdapterWithLogging(SoapStubAdapter):
             pass
 
     def InvokeMethod(self, mo, info, args, outerStub=None):
-        self._debug("{} --> {}", mo, info.wsdlName)
+        kwargs = dict()
+        for param, arg in zip(info.params, args):
+            kwargs[param.name] = FormatObject(arg)
+        self._debug("{} --> {}({})", mo, info.wsdlName, ', '.join("{}={}".format(key, value) for key, value in kwargs.items()))
         try:
             return SoapStubAdapter.InvokeMethod(self, mo, info, args, outerStub)
         finally:
