@@ -117,10 +117,9 @@ class CachedPropertyCollector(object):
     def _merge_object_update_into_cache__enter(self, object_ref_key, objectUpdate):
         # Rebuild the properties dict
         properties = {propertyChange.name: propertyChange.val
-                      for propertyChange in filter(lambda propertyChange: propertyChange.op in ['add', 'assign'],
-                                                   objectUpdate.changeSet)}
+                      for propertyChange in [propertyChange for propertyChange in objectUpdate.changeSet if propertyChange.op in ['add', 'assign']]}
         message = "Replacing cache for object_ref_key {} with a dictionary of the following keys {}"
-        logger.debug(message.format(object_ref_key, properties.keys()))
+        logger.debug(message.format(object_ref_key, list(properties.keys())))
         self._result = dict(self._result)  # copy
         self._result[object_ref_key] = properties
 

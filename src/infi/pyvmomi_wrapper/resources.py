@@ -1,11 +1,14 @@
 from pyVmomi import vim
-from UserDict import DictMixin
+try:
+    from UserDict import DictMixin
+except ImportError:
+    from collections import MutableMapping as DictMixin
 from infi.pyutils.lazy import clear_cache, cached_method
 from json import dumps, loads
 
 MANAGED_OBJECT_REFERENCE = "Folder:group-d1"
 
-class ExtensionResourceDict(object, DictMixin):
+class ExtensionResourceDict(DictMixin):
     """
     The problem with vSphere is that is does not expose extension's resources.
     For this purpose we have this dict on top of a custom field at the root folder
@@ -24,6 +27,12 @@ class ExtensionResourceDict(object, DictMixin):
 
     def __getitem__(self, key):
         return self._get_dict()[key]
+
+    def __len__(self):
+        return len(self._get_dict())
+
+    def __iter__(self):
+        return iter(self._get_dict())
 
     def __setitem__(self, key, value):
         dictionary = self._get_dict()

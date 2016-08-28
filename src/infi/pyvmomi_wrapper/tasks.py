@@ -5,6 +5,7 @@ from infi.pyutils.contexts import contextmanager
 from pyVmomi import vim
 from .errors import CreateTaskException
 from .extension import ExtensionFacade
+import six
 
 # The only valuable reference for how to use custom tasks is:
 # http://www.doublecloud.org/2010/09/creating-your-own-task-and-event-in-vsphere/
@@ -46,7 +47,7 @@ class TaskManager(object):
             task_managed_object = self._managed_object.CreateTask(**kwargs).task
         except:
             logger.exception("Failed to create task")
-            raise CreateTaskException, None, exc_info()[-1]
+            six.reraise(CreateTaskException, None, exc_info()[-1])
         return task_managed_object
 
 class Task(object):
@@ -98,7 +99,7 @@ class Task(object):
             self.set_state('error')
             self.set_description(str(exc_info[1].message))
             logger.error("Exception has been raised inside the task context", exc_info=exc_info)
-            raise exc_info[0], exc_info[1], exc_info[2]
+            raise six.reraise(*exc_info)
         self.set_state('success')
         self.set_description("")
 
