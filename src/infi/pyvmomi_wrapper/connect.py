@@ -57,6 +57,9 @@ def _create_stub(host, protocol="https", port=443,
     # Create the SOAP stub adapter
     if certfile is not None and keyfile is not None:
         # SSL Tunnel
+        # To pass the SSL certificate we can't connect through https, we must open an SSL Tunnel
+        # https://kb.vmware.com/kb/2004305
+        # This is useful for extensions, for example, which use LoginExtensionByCertificate
         return SoapStubAdapterWithLogging('sdkTunnel', 8089, version=version, path=path,
                                certKeyFile=keyfile, certFile=certfile, httpProxyHost=host, sslContext=sslContext)
     else:
