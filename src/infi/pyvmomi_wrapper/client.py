@@ -58,31 +58,38 @@ class Client(object):
     def wait_for_task(self, task, timeout=None):
         return self.wait_for_tasks([task], timeout)
 
-    def _create_traversal_spec(self, name, managed_object_type, property_name, next_selector_names=[]):
+    def create_traversal_spec(self, name, managed_object_type, property_name, next_selector_names=[]):
         return vim.TraversalSpec(name=name, type=managed_object_type, path=property_name,
-           selectSet=[vim.SelectionSpec(name=selector_name) for selector_name in next_selector_names])
+            selectSet=[vim.SelectionSpec(name=selector_name) for selector_name in next_selector_names])
 
     def _build_full_traversal(self):
-        rpToRp = self._create_traversal_spec("rpToRp", vim.ResourcePool, "resourcePool", ["rpToRp", "rpToVm"])
-        rpToVm = self._create_traversal_spec("rpToVm", vim.ResourcePool, "vm")
-        crToRp = self._create_traversal_spec("crToRp", vim.ComputeResource, "resourcePool", ["rpToRp", "rpToVm"])
-        crToH = self._create_traversal_spec("crToH", vim.ComputeResource, "host")
-        dcToHf = self._create_traversal_spec("dcToHf", vim.Datacenter, "hostFolder", ["visitFolders"])
-        dcToVmf = self._create_traversal_spec("dcToVmf", vim.Datacenter, "vmFolder", ["visitFolders"])
-        HToVm = self._create_traversal_spec("HToVm", vim.HostSystem, "vm", ["visitFolders"])
-        dcToDs = self._create_traversal_spec("dcToDs", vim.Datacenter, "datastore", ["visitFolders"])
-        visitFolders = self._create_traversal_spec("visitFolders", vim.Folder, "childEntity",
-            ["visitFolders", "dcToHf", "dcToVmf", "crToH", "crToRp", "HToVm", "dcToDs"])
-        return [visitFolders, dcToVmf, dcToHf, crToH, crToRp, rpToRp, HToVm, rpToVm, dcToDs]
+        rpToVm = self.create_traversal_spec("rpToVm", vim.ResourcePool, "vm")
+        rpToRp = self.create_traversal_spec("rpToRp", vim.ResourcePool, "resourcePool", ["rpToRp", "rpToVm"])
+        crToRp = self.create_traversal_spec("crToRp", vim.ComputeResource, "resourcePool", ["rpToRp", "rpToVm"])
+        crToH = self.create_traversal_spec("crToH", vim.ComputeResource, "host")
+        dcToHf = self.create_traversal_spec("dcToHf", vim.Datacenter, "hostFolder", ["visitFolders"])
+        dcToVmf = self.create_traversal_spec("dcToVmf", vim.Datacenter, "vmFolder", ["visitFolders"])
+        HToVm = self.create_traversal_spec("HToVm", vim.HostSystem, "vm", ["visitFolders"])
+        dcToDs = self.create_traversal_spec("dcToDs", vim.Datacenter, "datastore", ["visitFolders"])
+        dsToVm = self.create_traversal_spec("dsToVm", vim.Datastore, "vm", ["visitFolders"])
+        visitFolders = self.create_traversal_spec("visitFolders", vim.Folder, "childEntity",
+            ["visitFolders", "dcToHf", "dcToVmf", "crToH", "crToRp", "HToVm", "dsToVm", "dcToDs"])
+        return [visitFolders, dcToVmf, dcToHf, crToH, crToRp, rpToRp, HToVm, rpToVm, dsToVm, dcToDs]
 
-    def _retrieve_properties(self, managed_object_type, props=[], collector=None, root=None, recurse=True):
+    def _retrieve_properties(self, managed_object_type, props=[], collector=None, root=None, recurse=True,
+                             traversal_specs=None):
         if not collector:
             collector = self.service_content.propertyCollector
         if not root:
             root = self.service_content.rootFolder
 
         property_spec = vim.PropertySpec(type=managed_object_type, pathSet=props)
-        selection_specs = list(self._build_full_traversal()) if recurse else []
+
+        if not traversal_specs:
+            selection_specs = self._build_full_traversal() if recurse else []
+        else:
+            selection_specs = traversal_specs
+
         object_spec = vim.ObjectSpec(obj=root, selectSet=selection_specs)
 
         spec = vim.PropertyFilterSpec(propSet=[property_spec], objectSet=[object_spec])
@@ -96,13 +103,11 @@ class Client(object):
             objects.extend(retrieve_result.objects)
         return objects
 
-    def retrieve_properties(self, managed_object_type, props=[], collector=None, root=None, recurse=True):
-        retrieved_properties = self._retrieve_properties(managed_object_type, props, collector, root, recurse)
-        data = []
-        for obj in retrieved_properties:
-            properties = dict((prop.name, prop.val) for prop in obj.propSet)
-            properties['obj'] = obj.obj
-            data.append(properties)
+    def retrieve_properties(self, managed_object_type, props=[], collector=None, root=None, recurse=True,
+                            traversal_specs=None):
+        retrieved_properties = self._retrieve_properties(managed_object_type, props, collector, root, recurse,
+                                                         traversal_specs)
+        data = {obj.obj: dict((prop.name, prop.val) for prop in obj.propSet) for obj in retrieved_properties}
         return data
 
     def get_decendents_by_name(self, managed_object_type, name=None):

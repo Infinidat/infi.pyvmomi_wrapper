@@ -64,7 +64,7 @@ class CachedPropertyCollector(object):
         return "<{}: object_type={!r}, properties={!r}, version={}>".format(*args)
 
     def _create_traversal_spec(self, name, managed_object_type, property_name, next_selector_names=[]):
-        return self._client._create_traversal_spec(name, managed_object_type, property_name, next_selector_names)
+        return self._client.create_traversal_spec(name, managed_object_type, property_name, next_selector_names)
 
     @cached_method
     def _get_container_view(self):
