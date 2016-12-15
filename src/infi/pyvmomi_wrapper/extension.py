@@ -12,7 +12,6 @@ class ExtensionFacade(object):
     VERSION = "1.0"
 
     def __init__(self, client, key):
-        super(ExtensionFacade, self).__init__()
         self._client = client
         self._managed_object = self._client.service_content.extensionManager
         self._resources_dict = ExtensionResourceFactory.get_dict(self._client, key)
