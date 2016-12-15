@@ -14,7 +14,6 @@ class ExtensionResourceDict(DictMixin):
     For this purpose we have this dict on top of a custom field at the root folder
     """
     def __init__(self, client, field_name):
-        super(ExtensionResourceDict, self).__init__()
         self._client = client
         self._field_name = field_name
         self._managed_object = self._client.get_managed_object_by_reference(MANAGED_OBJECT_REFERENCE)
