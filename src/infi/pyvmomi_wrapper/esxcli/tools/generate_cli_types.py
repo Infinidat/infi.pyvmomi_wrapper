@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 def generate_cli_data_objects(host):
     dmanager = host.RetrieveDynamicTypeManager()
 
@@ -15,4 +17,4 @@ def generate_cli_data_objects(host):
 
 if __name__ == '__main__':
     for i in generate_cli_data_objects(host):
-        print i
+        print(i)

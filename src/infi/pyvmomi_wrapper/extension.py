@@ -34,7 +34,7 @@ class ExtensionFacade(object):
     # Tasks management
 
     def is_task_registered(self, task_name):
-        return task_name in self._get_tasks().values()
+        return task_name in list(self._get_tasks().values())
 
     def get_task_id(self, task_name):
         if not self.is_registered():
