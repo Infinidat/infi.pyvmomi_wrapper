@@ -74,10 +74,14 @@ class ExtensionFacade(object):
     def _workaround_vcenter_restart(self, extension):
         # HIPVM-670 VMWare resets some unset fields to empty strings upon restart, and then fails on UpdateExtension
         # due to "incorrect parameters". So we need to re-unset empty fields
-        extension.extendedProductInfo.companyUrl = extension.extendedProductInfo.companyUrl or None
-        extension.extendedProductInfo.productUrl = extension.extendedProductInfo.productUrl or None
-        extension.extendedProductInfo.managementUrl = extension.extendedProductInfo.managementUrl or None
-        extension.solutionManagerInfo.smallIconUrl = extension.solutionManagerInfo.smallIconUrl or None
+        # HPTVM-1116 apparently extendedProductInfo can also be unset
+        if extension.extendedProductInfo is None:
+            extension.extendedProductInfo = vim.ExtExtendedProductInfo()
+        else:
+            extension.extendedProductInfo.companyUrl = extension.extendedProductInfo.companyUrl or None
+            extension.extendedProductInfo.productUrl = extension.extendedProductInfo.productUrl or None
+            extension.extendedProductInfo.managementUrl = extension.extendedProductInfo.managementUrl or None
+            extension.solutionManagerInfo.smallIconUrl = extension.solutionManagerInfo.smallIconUrl or None
         return extension
 
     def _add_task(self, task_id, task_name):
