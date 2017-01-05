@@ -81,6 +81,9 @@ class ExtensionFacade(object):
             extension.extendedProductInfo.companyUrl = extension.extendedProductInfo.companyUrl or None
             extension.extendedProductInfo.productUrl = extension.extendedProductInfo.productUrl or None
             extension.extendedProductInfo.managementUrl = extension.extendedProductInfo.managementUrl or None
+        if extension.solutionManagerInfo is None:
+            extension.solutionManagerInfo = vim.ExtSolutionManagerInfo()
+        else:
             extension.solutionManagerInfo.smallIconUrl = extension.solutionManagerInfo.smallIconUrl or None
         return extension
 
