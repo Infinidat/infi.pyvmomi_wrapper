@@ -32,7 +32,7 @@ class SoapStubAdapterWithLogging(SoapStubAdapter):
 
 
 def _create_stub(host, protocol="https", port=443,
-                 namespace=None, path="/sdk",
+                 namespace=None, path="/sdk", sdk_tunnel_host='sdkTunnel', sdk_tunnel_port=8089,
                  version=None, keyfile=None, certfile=None, sslContext=None):
 
     port = protocol == "http" and -int(port) or int(port)
@@ -60,13 +60,14 @@ def _create_stub(host, protocol="https", port=443,
         # To pass the SSL certificate we can't connect through https, we must open an SSL Tunnel
         # https://kb.vmware.com/kb/2004305
         # This is useful for extensions, for example, which use LoginExtensionByCertificate
-        return SoapStubAdapterWithLogging('sdkTunnel', 8089, version=version, path=path,
+        return SoapStubAdapterWithLogging(sdk_tunnel_host, sdk_tunnel_port, version=version, path=path,
                                certKeyFile=keyfile, certFile=certfile, httpProxyHost=host, sslContext=sslContext)
     else:
         return SoapStubAdapterWithLogging(host, port, version=version, path=path, sslContext=sslContext)
 
 def Connect(host, protocol="https", port=443, user=None, pwd=None,
             namespace=None, path="/sdk",
+            sdk_tunnel_host='sdkTunnel', sdk_tunnel_port=8089,
             preferredApiVersions=None, keyfile=None, certfile=None, sslContext=None):
     """
     Determine the most preferred API version supported by the specified server,
@@ -115,7 +116,7 @@ def Connect(host, protocol="https", port=443, user=None, pwd=None,
         raise Exception("%s:%s is not a VIM server" % (host, port))
     version = supportedVersion
 
-    stub = _create_stub(host, protocol, port, namespace, path, version, keyfile, certfile, sslContext)
+    stub = _create_stub(host, protocol, port, namespace, path, sdk_tunnel_host, sdk_tunnel_port, version, keyfile, certfile, sslContext)
 
     # Get Service instance
     si = vim.ServiceInstance("ServiceInstance", stub)
