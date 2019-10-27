@@ -70,7 +70,7 @@ class Task(object):
             for step in steps:
                 step()
                 percentage += increment
-                self.update_progress(percentage)
+                self.update_progress(int(percentage))
                 yield percentage
             self.update_progress(100)
 
