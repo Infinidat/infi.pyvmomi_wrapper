@@ -9,7 +9,7 @@ def get_reference_to_managed_object(mo):
 
 
 class Client(object):
-    def __init__(self, vcenter_address, protocol="https", port=443, username=None, password=None, sdk_tunnel_host='sdkTunnel', sdk_tunnel_port=8089, certfile=None, keyfile=None, sslContext=None):
+    def __init__(self, vcenter_address, username=None, password=None, sdk_tunnel_host='sdkTunnel', sdk_tunnel_port=8089, certfile=None, keyfile=None, sslContext=None, protocol="https", port=443):
         self.service_instance = Connect(vcenter_address, protocol=protocol, port=port
             user=username, pwd=password,
             sdk_tunnel_host=sdk_tunnel_host, sdk_tunnel_port=sdk_tunnel_port,
