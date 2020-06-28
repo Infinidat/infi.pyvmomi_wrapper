@@ -1,6 +1,7 @@
 # Copy of SmartConnect + Connect, but login is optional and keyfile/certfile passed all the way
 
-from pyVim.connect import GetServiceVersions, __FindSupportedVersion, SoapStubAdapter
+from pyVim.connect import (GetServiceVersions, __FindSupportedVersion, SoapStubAdapter, SmartStubAdapter,
+                           VimSessionOrientedStub)
 from pyVim.connect import versionMap, _rx
 from .format_object import FormatObject
 from pyVmomi import vim
@@ -141,3 +142,12 @@ def Connect(host, protocol="https", port=443, user=None, pwd=None,
         content.sessionManager.Login(user, pwd, None)
 
     return si
+
+
+def get_smart_stub_instance(vcenter_address, username=None, password=None, **kwargs):
+    """
+    https://github.com/vmware/pyvmomi/issues/347
+    """
+    smart_stub = SmartStubAdapter(host=vcenter_address, connectionPoolTimeout=0, **kwargs)
+    session_stub = VimSessionOrientedStub(smart_stub, VimSessionOrientedStub.makeUserLoginMethod(username, password))
+    return vim.ServiceInstance('ServiceInstance', session_stub)

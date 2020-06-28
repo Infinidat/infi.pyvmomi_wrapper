@@ -1,5 +1,5 @@
 from pyVmomi import vim
-from .connect import Connect
+from .connect import Connect, get_smart_stub_instance
 from .errors import TimeoutException
 
 
@@ -9,11 +9,19 @@ def get_reference_to_managed_object(mo):
 
 
 class Client(object):
-    def __init__(self, vcenter_address, username=None, password=None, sdk_tunnel_host='sdkTunnel', sdk_tunnel_port=8089, certfile=None, keyfile=None, sslContext=None):
-        self.service_instance = Connect(vcenter_address,
-            user=username, pwd=password,
-            sdk_tunnel_host=sdk_tunnel_host, sdk_tunnel_port=sdk_tunnel_port,
-            certfile=certfile, keyfile=keyfile, sslContext=sslContext)
+    def __init__(self, vcenter_address, username=None, password=None, sdk_tunnel_host='sdkTunnel', sdk_tunnel_port=8089,
+                 certfile=None, keyfile=None, sslContext=None, protocol="https", port=443, use_smart_stub=False):
+        if use_smart_stub:
+            connection_kwargs = dict(username=username, password=password,
+                                     port=port, sslContext=sslContext, certKeyFile=certfile)
+            self.service_instance = get_smart_stub_instance(vcenter_address, **connection_kwargs)
+        else:
+            connection_kwargs = dict(protocol=protocol, port=port,
+                                     user=username, pwd=password, sdk_tunnel_host=sdk_tunnel_host,
+                                     sdk_tunnel_port=sdk_tunnel_port,
+                                     certfile=certfile, keyfile=keyfile, sslContext=sslContext)
+            self.service_instance = Connect(vcenter_address, **connection_kwargs)
+        self.smart_stub = use_smart_stub
         self.service_content = self.service_instance.content
         self.session_manager = self.service_content.sessionManager
         self.root = self.service_content.rootFolder
