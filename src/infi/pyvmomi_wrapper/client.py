@@ -1,4 +1,5 @@
 from pyVmomi import vim
+from urllib.parse import unquote
 from .connect import Connect, get_smart_stub_instance
 from .errors import TimeoutException
 
@@ -125,7 +126,7 @@ class Client(object):
         if not name:
             return objects
         for obj in objects:
-            if obj.name == name:
+            if unquote(obj.name) == name:
                 return obj
 
     def get_host_systems(self):
