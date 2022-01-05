@@ -1,8 +1,13 @@
 from pyVmomi import vim
 try:
-    from UserDict import DictMixin
+    from collections.abc import MutableMapping as DictMixin
 except ImportError:
-    from collections import MutableMapping as DictMixin
+    try:
+        # Older alternative.  Removed in python 3.10.
+        from collections import MutableMapping as DictMixin
+    except ImportError:
+        # Even older alternative.  Deprecated in python 2.6.
+        from UserDict import DictMixin
 from infi.pyutils.lazy import clear_cache, cached_method
 from json import dumps, loads
 
