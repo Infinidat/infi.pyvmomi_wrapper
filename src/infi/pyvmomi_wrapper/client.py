@@ -1,5 +1,8 @@
 from pyVmomi import vim
-from urllib.parse import unquote
+try:
+    from urllib.parse import unquote
+except ImportError:
+    from urlparse import unquote  # For py2 support
 from .connect import Connect, get_smart_stub_instance
 from .errors import TimeoutException
 
