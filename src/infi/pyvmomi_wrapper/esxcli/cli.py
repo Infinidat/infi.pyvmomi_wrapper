@@ -1,4 +1,4 @@
-from pyVmomi.VmomiSupport import CreateAndLoadManagedType
+from pyVmomi.VmomiSupport import CreateDataType, CreateAndLoadManagedType
 from pyVmomi.ManagedMethodExecutorHelper import MMESoapStubAdapter
 from pyVmomi.VmomiSupport import F_OPTIONAL
 from ..errors import CLITypeException
@@ -9,6 +9,18 @@ class EsxCLI(object):
     def __init__(self, host):
         self._host = host
         self._host_api_version = host.summary.config.product.apiVersion
+
+    def _load_datatypes(self):
+        dmanager = self._host.RetrieveDynamicTypeManager()
+        data_types = dmanager.DynamicTypeMgrQueryTypeInfo(None).dataTypeInfo
+
+        for dt in data_types:
+            vmodlName = dt.name
+            wsdlName = dt.wsdlName
+            parent = dt.base[0]
+            version = dt.version
+            props = [(prop.name, prop.type, prop.version, F_OPTIONAL) for prop in dt.property]
+            CreateDataType(vmodlName, wsdlName, parent, version, props)
 
     def _load_type(self, type_info):
         if type_info.name not in self._loaded_types:
