@@ -1,6 +1,7 @@
 from pyVmomi.VmomiSupport import CreateAndLoadManagedType
-from pyVmomi.ManagedMethodExecutorHelper import MMESoapStubAdapter
+from pyVmomi.SoapAdapter import SoapStubAdapter
 from pyVmomi.VmomiSupport import F_OPTIONAL
+from .ManagedMethodExecutorHelper import MMESoapStubAdapter
 from ..errors import CLITypeException
 
 class EsxCLI(object):
