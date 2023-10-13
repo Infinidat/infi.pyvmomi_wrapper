@@ -43,8 +43,8 @@ class Client(object):
         self.property_collectors = {}
 
     def logout(self):
-        self.session_manager.Logout()
         self.property_collectors = {}
+        self.session_manager.Logout()
 
     def wait_for_tasks(self, tasks, timeout=None):
         from time import time
