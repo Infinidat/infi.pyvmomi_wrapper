@@ -53,7 +53,7 @@ class CachedPropertyCollector(object):
         if self._property_collector is not None:
             try:
                 self._property_collector.Destroy()
-            except vim.ManagedObjectNotFound:
+            except (vim.fault.NotAuthenticated, vim.ManagedObjectNotFound):
                 # in case session ended, property collector may already be destroyed
                 pass
             self._property_collector = None
