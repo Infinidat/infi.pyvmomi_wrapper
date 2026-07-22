@@ -1,6 +1,13 @@
 
-from pyVmomi.VmomiSupport import Object, DataObject, ManagedObject, ManagedMethod, UncallableManagedMethod
+from pyVmomi.VmomiSupport import Object, DataObject, ManagedObject, ManagedMethod
 from pyVmomi.VmomiSupport import F_LINK, datetime, binary, base64, Iso8601, FormatObject
+
+try:
+    from pyVmomi.VmomiSupport import UncallableManagedMethod
+except ImportError:
+    # removed in pyvmomi 8.x; keep isinstance() check below working
+    class UncallableManagedMethod:
+        pass
 
 
 def FormatObject(val, info=Object(name="", type=object, flags=0)):
